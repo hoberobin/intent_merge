@@ -1,7 +1,7 @@
 # Rewrite Rules
 
 ## Goal
-When the user chooses "Update plan," the rewritten plan should remain useful to both the human and the AI agent.
+When the user chooses **Update plan** (align the markdown spec), the rewritten plan should remain useful to both the human and the AI agent.
 
 ## Rewrite principles
 - keep the title

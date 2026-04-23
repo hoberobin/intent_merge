@@ -2,26 +2,18 @@
 
 ## What this should do
 
-Users should be able to create an account using email and password. Keep this simple. An optional role may also be included during signup. Users should be able to create an account using email and password. Keep this simple.
-
-Users should be able to create an account using email and password. Keep this simple. An optional role may also be included during signup.
-
-Users should be able to create an account using email and password.
-Keep this simple. No roles yet.
+Signup should stay small: collect email and password, persist the user, return enough for the client to continue. Product has floated an optional **role** field for future admin grants, but **this release defers RBAC** — **No roles yet** in the handler or API contract.
 
 ## Inputs
 
 - email
 - password
 - role
-- email
-- password
-- role
-- email
-- password
 
 ## Output
 
 - user account
-- user account
-- user account
+
+## Notes for agent
+
+Parameters for the export are named `email`, `password`, and optional `role` in discussion docs only; shipping code must not accept `role` until the plan is updated.

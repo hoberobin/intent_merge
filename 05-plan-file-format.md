@@ -46,5 +46,8 @@ The plan reader should prioritize these sections in this order:
 ## Important product rule
 Do not force the user to write YAML, JSON, or a strict contract block for the MVP.
 
+## Notes for agent (recommended for richer specs)
+When inputs use natural phrases (**customer id**) but the code uses **camelCase** (`customerId`), add a short **Notes for agent** block that names the exact parameter identifiers. That keeps automated checks **on spec** without forcing bullets to read like code.
+
 ## Rewrite requirement
 If the user chooses "Update plan," the rewritten file should stay readable and should continue to look like a real plan file, not a machine schema dump.

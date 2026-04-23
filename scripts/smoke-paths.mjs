@@ -42,12 +42,12 @@ function case_(name, fn) {
 
 case_("demo 03 → mismatch (defer)", () => {
   const out = run(["check", "--demo", "03"], { INTENT_MERGE_RESOLUTION: "3" });
-  must(/Mismatch/i.test(out), "expected mismatch title");
+  must(/Off spec|Mismatch/i.test(out), "expected mismatch headline");
 });
 
 case_("demo 01 → aligned", () => {
   const out = run(["check", "--demo", "01"], { INTENT_MERGE_RESOLUTION: "3" });
-  must(/Aligned|No meaningful mismatch/i.test(out), "expected aligned");
+  must(/On spec|Aligned|No meaningful mismatch/i.test(out), "expected aligned / on spec");
 });
 
 case_("init + check in empty dir → aligned", () => {
@@ -55,7 +55,7 @@ case_("init + check in empty dir → aligned", () => {
   try {
     run(["init"], {}, dir);
     const out = run(["check"], { INTENT_MERGE_RESOLUTION: "3" }, dir);
-    must(/Aligned|No meaningful mismatch/i.test(out), "expected aligned after init");
+    must(/On spec|Aligned|No meaningful mismatch/i.test(out), "expected aligned after init");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -67,14 +67,14 @@ case_("explicit paths fixture 06 → insufficient", () => {
     join(root, "fixtures", "06-vague-plan", "plan.md"),
     join(root, "fixtures", "06-vague-plan", "build.ts"),
   ], { INTENT_MERGE_RESOLUTION: "3" });
-  must(/Not enough signal|insufficient/i.test(out), "expected insufficient");
+  must(/Not enough signal to compare|Not enough signal|insufficient/i.test(out), "expected insufficient");
 });
 
 case_("omit check when first arg is .md", () => {
   const plan = join(root, "fixtures", "01-aligned", "plan.md");
   const build = join(root, "fixtures", "01-aligned", "build.ts");
   const out = run([plan, build], { INTENT_MERGE_RESOLUTION: "3" });
-  must(/Aligned|No meaningful mismatch/i.test(out), "expected aligned for implicit check");
+  must(/On spec|Aligned|No meaningful mismatch/i.test(out), "expected aligned for implicit check");
 });
 
 case_("same-folder defaults (plan.md + build.ts)", () => {
@@ -89,7 +89,17 @@ case_("same-folder defaults (plan.md + build.ts)", () => {
       readFileSync(join(root, "fixtures", "01-aligned", "build.ts"), "utf8"),
     );
     const out = run(["check"], { INTENT_MERGE_RESOLUTION: "3" }, dir);
-    must(/Aligned|No meaningful mismatch/i.test(out), "expected aligned with defaults");
+    must(/On spec|Aligned|No meaningful mismatch/i.test(out), "expected aligned with defaults");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+case_("setup in empty dir → ritual text", () => {
+  const dir = mkdtempSync(join(root, "tmp-smoke-setup-"));
+  try {
+    const out = run(["setup"], {}, dir);
+    must(/ritual|plan\.md|check --demo/i.test(out), "expected setup guidance");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -99,4 +109,4 @@ if (failed) {
   console.error(`\n${failed} case(s) failed.`);
   process.exit(1);
 }
-console.log(`\nAll smoke path checks passed (${6} cases).`);
+console.log(`\nAll smoke path checks passed (${7} cases).`);

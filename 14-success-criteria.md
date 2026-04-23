@@ -6,10 +6,10 @@ Define what it means for the MVP to prove the concept.
 ## Success criteria
 
 ### 1. Easy to trigger
-A user can run the tool with one command and without significant setup overhead (including **same-folder** `plan.md` + `build.ts`, **`check --demo`**, or **`init`** then `check`).
+A user can run the tool with one command and without significant setup overhead (including **same-folder** `plan.md` + `build.ts`, **`check --demo`**, **`setup`**, or **`init`** then `check`).
 
 ### 2. Understandable output
-A non-technical or semi-technical builder can read the result and understand the mismatch without needing code-level language.
+A non-technical or semi-technical builder can read the result and understand **on spec vs off spec** without code-level language; technical detail is available with **`--verbose`**.
 
 ### 3. Useful next step
 The tool always leaves the user with a clear next move:
@@ -24,7 +24,7 @@ The fixture set produces believable outcomes across:
 - insufficient signal
 
 ### 5. Workflow fit
-The user can imagine running this naturally after an AI agent makes a change.
+The user can imagine running this naturally after an AI agent makes a change—and an **external agent** can follow `docs/agent.md` to run the **same** `intent-merge check` the user would run.
 
 ### 6. Plan rewrite quality
 Updated plan files remain readable and useful for future agent prompts.

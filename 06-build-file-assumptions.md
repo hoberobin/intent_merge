@@ -22,7 +22,7 @@ The build reader should try to extract:
 ## Acceptable limitations
 The MVP does not need to fully understand:
 - nested implementation details
-- complex return objects
+- complex return objects (prefer a **single flat** `return { key: value, ... }` so return keys are visible to the reader)
 - large codebases
 - multiple exported targets in one file
 

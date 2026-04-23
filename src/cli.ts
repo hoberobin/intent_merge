@@ -15,7 +15,7 @@ import { readPlan } from "./plan-reader.js";
 import { comparePlanBuild, planBuildForDisplay } from "./compare.js";
 import { presentAligned, presentInsufficient, presentMismatch } from "./present.js";
 import { applyResolution, promptResolution } from "./resolve.js";
-import { dim } from "./terminal-ui.js";
+import { bold, dim } from "./terminal-ui.js";
 
 const DEFAULT_PLANS = ["plan.md", "feature.md"];
 const DEFAULT_BUILDS = ["build.ts", "index.ts"];
@@ -45,7 +45,9 @@ async function askPath(rl: readline.Interface, label: string): Promise<string> {
 function normalizeArgv(argv: string[]): string[] {
   if (argv.length === 0) return ["help"];
   const c = argv[0];
-  if (c === "check" || c === "init" || c === "help" || c === "-h" || c === "--help") return argv;
+  if (c === "check" || c === "init" || c === "setup" || c === "help" || c === "-h" || c === "--help") {
+    return argv;
+  }
   if (c === "demo") return ["check", "--demo", ...argv.slice(1)];
   if (c.endsWith(".md") || c.endsWith(".ts") || c.endsWith(".tsx") || c.endsWith(".js")) {
     return ["check", ...argv];
@@ -57,13 +59,19 @@ function parseAfterCheck(rest: string[]): {
   paths: string[];
   resolutionToken?: string;
   demo?: string;
+  verbose: boolean;
 } {
   const paths: string[] = [];
   let resolutionToken: string | undefined;
   let demo: string | undefined;
+  let verbose = false;
 
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
+    if (a === "--verbose" || a === "-v") {
+      verbose = true;
+      continue;
+    }
     if (a === "--demo") {
       const next = rest[i + 1];
       if (next && !next.startsWith("-")) {
@@ -97,7 +105,7 @@ function parseAfterCheck(rest: string[]): {
   if (paths.length >= 3 && /^[123]$/.test(paths[paths.length - 1])) {
     resolutionToken = paths.pop();
   }
-  return { paths, resolutionToken, demo };
+  return { paths, resolutionToken, demo, verbose };
 }
 
 async function resolvePaths(pathArgs: string[], cwd: string): Promise<[string, string]> {
@@ -111,9 +119,13 @@ async function resolvePaths(pathArgs: string[], cwd: string): Promise<[string, s
   const build = await pickDefault(DEFAULT_BUILDS, cwd);
   if (!plan || !build) {
     throw new Error(
-      `No plan.md + build.ts in this folder (${cwd}).\n\n` +
-        `  intent-merge init          create starters here\n` +
-        `  intent-merge check --demo  run a built-in sample (no paths)\n`,
+      `No markdown spec + implementation pair found in this folder yet.\n\n` +
+        `Intent Merge looks for one of: ${DEFAULT_PLANS.join(", ")} with one of: ${DEFAULT_BUILDS.join(", ")}.\n\n` +
+        `Try one of these:\n` +
+        `  intent-merge init              create plan.md + build.ts here\n` +
+        `  intent-merge check --demo      run a built-in sample (nothing to create)\n` +
+        `  intent-merge setup             quick start: create files if missing + print the ritual\n\n` +
+        `Or pass two paths: intent-merge check path/to/spec.md path/to/file.ts\n`,
     );
   }
   return [plan, build];
@@ -121,13 +133,15 @@ async function resolvePaths(pathArgs: string[], cwd: string): Promise<[string, s
 
 function printHelp(): void {
   const ids = listDemoIds().join(", ");
-  console.log(`Intent Merge — compare one plan file to one build file
+  console.log(`Intent Merge — keep one markdown spec and one code file in sync
 
 ${dim("Quick")}
   intent-merge check              use ./plan.md + ./build.ts when both exist
+  intent-merge check --verbose    same, with technical detail (signatures, return shape)
   intent-merge check --demo       built-in sample (${dim("default: 03 missing-password")})
   intent-merge demo               same as check --demo
   intent-merge init               create plan.md + build.ts in this folder
+  intent-merge setup              quick start + print the ritual (creates files if missing)
 
 ${dim("Your files")}
   intent-merge check plan.md build.ts
@@ -162,6 +176,47 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (cmd === "setup") {
+    const cwd = process.cwd();
+    const nodeMajor = Number.parseInt(process.versions.node.split(".")[0] ?? "0", 10);
+    if (!Number.isFinite(nodeMajor) || nodeMajor < 18) {
+      console.error(`Intent Merge needs Node.js 18 or newer (this is ${process.version}).`);
+      process.exitCode = 1;
+      return;
+    }
+    const plan = await pickDefault(DEFAULT_PLANS, cwd);
+    const build = await pickDefault(DEFAULT_BUILDS, cwd);
+    if (!plan || !build) {
+      try {
+        await runInit(cwd, { force: false });
+        console.log(dim("\nCreated plan.md and build.ts in this folder.\n"));
+      } catch (e) {
+        console.error((e as Error).message);
+        process.exitCode = 1;
+        return;
+      }
+    } else {
+      console.log(dim("plan.md and build.ts are already here — skipping init.\n"));
+    }
+    console.log(bold("Your ritual"));
+    console.log(
+      [
+        "  1. Edit your markdown spec (plan.md) to describe what you want.",
+        "  2. Edit build.ts (or your one implementation file) to match.",
+        "  3. Run:  intent-merge check",
+        "  4. If you are off spec, choose whether to update the spec or get a prompt to fix the code.",
+        "",
+        "Try a sample with no files required:",
+        "  intent-merge check --demo",
+        "",
+        "Stress-test with a larger example (from repo root; off spec on purpose for the loop):",
+        "  cd examples/billing-checkout-session && intent-merge check",
+        "",
+      ].join("\n"),
+    );
+    return;
+  }
+
   if (cmd !== "check") {
     console.error(`Unknown command: ${cmd}\n`);
     printHelp();
@@ -170,12 +225,13 @@ async function main(): Promise<void> {
   }
 
   const rawRest = argv.slice(1);
-  const { paths: pathArgs, resolutionToken, demo } = parseAfterCheck(rawRest);
+  const { paths: pathArgs, resolutionToken, demo, verbose } = parseAfterCheck(rawRest);
   if (resolutionToken) {
     process.env.INTENT_MERGE_RESOLUTION = resolutionToken;
   }
 
   const cwd = process.cwd();
+  const presentOpts = { verbose };
   let planPath: string;
   let buildPath: string;
 
@@ -215,18 +271,18 @@ async function main(): Promise<void> {
 
   if (result.kind === "aligned") {
     const plan = readPlan(planMd);
-    console.log(presentAligned(plan.title));
+    console.log(presentAligned(plan.title, presentOpts));
     return;
   }
 
   if (result.kind === "insufficient_signal") {
     const plan = readPlan(planMd);
-    console.log(presentInsufficient(plan.title, result.confidenceNote));
+    console.log(presentInsufficient(plan.title, result.confidenceNote, presentOpts));
     return;
   }
 
   const { plan, build } = planBuildForDisplay(planMd, buildSource);
-  console.log(presentMismatch(plan, build, result));
+  console.log(presentMismatch(plan, build, result, presentOpts));
 
   const outcome = await promptResolution();
   if (outcome.kind === "noninteractive") {
@@ -240,6 +296,7 @@ No resolution ran (not a TTY). Re-run with a flag, for example:
 
   await applyResolution(outcome.choice, planPath, buildPath, planMd, buildSource, plan, build, result, {
     interactive: input.isTTY,
+    verbose,
   });
 }
 

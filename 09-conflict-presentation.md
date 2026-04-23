@@ -6,34 +6,32 @@ Make mismatch output understandable to someone building with agents, not just to
 ## Required structure
 When a mismatch is found, show:
 
-1. title
-2. what the plan says
-3. what the build now appears to do
-4. why this matters
-5. what the user can do next
+1. headline (**Off spec** by default; **Mismatch** / full technical block with `--verbose`)
+2. what the spec is asking for (plan-derived bullets)
+3. what diverged (comparator summaries)
+4. (optional `--verbose`) what the build appears to do (signature / return-shape hints)
+5. why this matters
+6. what the user can do next (plain-language choices + numeric shortcuts)
 
 ## Example
 
 ```text
-We found a mismatch in "Create User"
+Off spec
 
-Your plan says:
-- users sign up with email and password
-- roles are not included yet
+Your markdown spec and implementation file do not line up — 1 finding.
 
-Your build now appears to include:
-- email
-- password
-- optional role
+What your spec is asking for
+  - …
 
-Why this matters:
-- your plan and build may now be telling the AI two different stories
-- future prompts may rely on the wrong source of truth
+What diverged
+  - …
 
-What would you like to do?
-[1] Update plan
-[2] Generate build-fix prompt
-[3] Decide later
+Technical detail about the implementation file is available with --verbose.
+
+What would you like to do next?
+  [1]  Update the markdown spec to match the code
+  [2]  Get a prompt you can paste into an AI to fix the code
+  [3]  Decide later
 ```
 
 ## Copy rules

@@ -22,15 +22,62 @@ export type ResolutionPromptOutcome =
 export type ApplyOptions = {
   /** When false, skip review / re-check (automation or non-TTY). */
   interactive: boolean;
+  /** When true, re-check output includes technical detail (same as CLI --verbose). */
+  verbose?: boolean;
 };
 
 function parseChoiceToken(raw: string): ResolutionChoice | null {
   const a = raw.trim().toLowerCase();
-  if (a === "1" || a === "update" || a === "update plan") return "update_plan";
-  if (a === "2" || a === "prompt" || a === "fix" || a === "generate build-fix prompt") {
+  if (!a) return null;
+
+  if (
+    a === "1" ||
+    a === "update" ||
+    a === "update plan" ||
+    a === "spec" ||
+    a === "markdown" ||
+    a === "plan" ||
+    a === "align spec" ||
+    a === "update spec" ||
+    a === "update the spec" ||
+    a === "update the plan" ||
+    a === "rewrite spec" ||
+    a === "rewrite the spec" ||
+    a === "use the spec" ||
+    a === "change the markdown"
+  ) {
+    return "update_plan";
+  }
+  if (
+    a === "2" ||
+    a === "prompt" ||
+    a === "fix" ||
+    a === "generate build-fix prompt" ||
+    a === "code" ||
+    a === "implementation" ||
+    a === "align code" ||
+    a === "fix code" ||
+    a === "fix the code" ||
+    a === "build" ||
+    a === "use the code" ||
+    a === "change the code"
+  ) {
     return "build_prompt";
   }
-  if (a === "3" || a === "later" || a === "skip" || a === "decide later") return "defer";
+  if (
+    a === "3" ||
+    a === "later" ||
+    a === "skip" ||
+    a === "decide later" ||
+    a === "defer" ||
+    a === "stop" ||
+    a === "nothing" ||
+    a === "not now" ||
+    a === "pass" ||
+    a === "exit"
+  ) {
+    return "defer";
+  }
   return null;
 }
 
@@ -70,9 +117,10 @@ export async function promptResolution(): Promise<ResolutionPromptOutcome> {
   const banner =
     `\n${line}\n` +
     `${bold("Next step")}\n` +
-    `${dim("Type a number, then Enter (while this program is running — not at the shell prompt after it exits).")}\n\n` +
-    `  ${bold("1")}  Update plan\n` +
-    `  ${bold("2")}  Generate build-fix prompt\n` +
+    `${dim("While this program is running, type your answer and press Enter (not at the shell prompt after it exits).")}\n\n` +
+    `  Do you want to ${bold("align the markdown spec")} to what the code does now, or ${bold("align the code")} to what the spec says, or decide later?\n\n` +
+    `  ${bold("1")}  Update the markdown spec (to match the code)\n` +
+    `  ${bold("2")}  Get a prompt to fix the code (paste into an AI)\n` +
     `  ${bold("3")}  Decide later\n` +
     `${line}\n`;
 
@@ -81,11 +129,11 @@ export async function promptResolution(): Promise<ResolutionPromptOutcome> {
   const rl = readline.createInterface({ input: stdinStream, output });
   try {
     for (;;) {
-      const answer = (await rl.question("Your choice (1 / 2 / 3): ")).trim();
+      const answer = (await rl.question("Your choice (1–3, or a short phrase like “update the spec”): ")).trim();
       const choice = parseChoiceToken(answer);
       if (choice) return { kind: "chosen", choice };
       await output.write(
-        "That did not match 1, 2, or 3. Try again (only the digit is needed, then Enter).\n",
+        "That was not recognized. Try 1, 2, or 3 — or words like “update the spec”, “fix the code”, or “later”.\n",
       );
     }
   } finally {
@@ -144,6 +192,7 @@ async function recheckAlignment(
   buildPath: string,
   originalBuildSource: string,
   showSinceStartDiff: boolean,
+  presentVerbose: boolean,
 ): Promise<void> {
   let newBuild: string;
   try {
@@ -170,15 +219,16 @@ async function recheckAlignment(
 
   const planMd = await fs.readFile(planPath, "utf8");
   const again = comparePlanBuild(planMd, newBuild);
+  const po = { compact: true, verbose: presentVerbose };
   console.log(sectionTitle("Alignment after your changes"));
   if (again.kind === "aligned") {
-    console.log(presentAligned(readPlan(planMd).title, { compact: true }));
+    console.log(presentAligned(readPlan(planMd).title, po));
   } else if (again.kind === "insufficient_signal") {
-    console.log(presentInsufficient(readPlan(planMd).title, again.confidenceNote, { compact: true }));
+    console.log(presentInsufficient(readPlan(planMd).title, again.confidenceNote, po));
   } else {
     try {
       const fresh = planBuildForDisplay(planMd, newBuild);
-      console.log(presentMismatch(fresh.plan, fresh.build, again, { compact: true }));
+      console.log(presentMismatch(fresh.plan, fresh.build, again, po));
     } catch {
       console.log("Could not re-display mismatch details; run check again.");
     }
@@ -226,7 +276,7 @@ export async function applyResolution(
   compare: CompareResult,
   options: ApplyOptions,
 ): Promise<void> {
-  const { interactive } = options;
+  const { interactive, verbose: presentVerbose = false } = options;
 
   if (choice === "defer") {
     console.log(sectionTitle("No changes (for now)"));
@@ -350,7 +400,7 @@ export async function applyResolution(
   await maybeRunHook(promptFile, planPath, buildPath);
 
   if (appliedAiDraft) {
-    await recheckAlignment(planPath, buildPath, originalBuildSource, false);
+    await recheckAlignment(planPath, buildPath, originalBuildSource, false, presentVerbose);
     return;
   }
 
@@ -365,5 +415,5 @@ export async function applyResolution(
     }
   });
 
-  await recheckAlignment(planPath, buildPath, originalBuildSource, true);
+  await recheckAlignment(planPath, buildPath, originalBuildSource, true, presentVerbose);
 }

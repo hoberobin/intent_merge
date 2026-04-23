@@ -6,9 +6,11 @@ The MVP supports:
 - one JavaScript or TypeScript build file
 - one primary exported function target
 - simple plan-vs-build alignment checks
-- plain-language mismatch presentation
+- plain-language mismatch presentation (**on spec** / **off spec** headlines by default; technical detail behind `--verbose`)
 - plan rewrite when the user chooses "Update plan"
 - AI-ready prompt generation when the user chooses "Generate build-fix prompt"
+- **`intent-merge setup`** for a one-shot ritual + optional `init`
+- **Documented agent path:** portable instructions (`docs/agent.md`) and optional **Cursor rules** so assistants run the **same CLI** as humans
 
 ## Comparison dimensions in scope
 Only compare these:
@@ -21,7 +23,7 @@ Only compare these:
 ## Out of scope
 Do not include:
 - browser UI
-- IDE extension
+- packaged IDE extension / marketplace plugin (repo-local Cursor rules are **in scope** as docs only)
 - GitHub or CI integration
 - autonomous code editing (nothing writes the build **without** explicit user confirmation after review; optional API-generated **drafts** are in scope as a convenience path)
 - multi-file reasoning

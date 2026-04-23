@@ -2,10 +2,9 @@
 
 Result type: mismatch
 
-Expected mismatch summary:
+Expected mismatch code:
 
-- the build now includes an optional role
-- the plan explicitly says roles are not included yet
+- `negative_constraint_roles` — plan forbids roles for now; build still accepts `role`
 
 Expected user choices:
 
@@ -15,9 +14,8 @@ Expected user choices:
 
 If Update plan:
 
-- plan should be rewritten to mention optional role
-- "No roles yet" should be removed or revised
+- plan should be rewritten to allow optional `role`, and the “No roles yet” constraint removed or revised
 
 If Generate build-fix prompt:
 
-- prompt should ask the agent to remove role handling from signup
+- prompt should ask the agent to remove `role` handling until RBAC ships

@@ -11,12 +11,14 @@ This spec set defines a narrow MVP for a plan-vs-build alignment tool for people
 - added expected outcomes so the test loop is easy to verify
 
 ## Keep this spec aligned with the implementation (living product)
-When the CLI or README changes, update the numbered specs—especially **03** (CLI), **12** (proof loop), **13** (build sequence), **10** (resolution)—so they stay the single source of truth for behavior and testing.
+When the CLI or README changes, update the numbered specs—especially **03** (CLI), **12** (proof loop), **13** (build sequence), **10** (resolution)—so they stay the single source of truth for behavior and testing. Also keep **[docs/agent.md](docs/agent.md)** aligned with shipped flags and resolution behavior so **any AI agent** can run the same ritual as the terminal.
 
 **As implemented (still MVP):** optional **OpenAI**-assisted *draft* of the build file after “Generate build-fix prompt,” only if the user opts in, reviews (including in an editor), and confirms before writing. That is not “autonomous editing” or “advanced AI product features”; the default path remains prompt text + user/agent.
 
+**Surfaces (MVP):** **Terminal CLI** plus **documented agent usage** (copy-paste / Cursor rules). There is **no separate web UI** in scope for this phase.
+
 ## MVP in one sentence
-Intent Merge is a plain-language CLI tool that compares a lightweight markdown plan file to a simple code file, shows where they no longer align, and helps the user either update the plan or generate a prompt for the AI to update the build.
+Intent Merge is a plain-language tool that compares **one markdown spec** to **one code file**, says **on spec** or **off spec**, and helps you **align the spec or the code**—whether you run it yourself or an AI agent runs the same CLI for you.
 
 ## Core user promise
 "Show me where my build no longer matches my plan, explain it in plain language, and give me the next prompt or plan update so I can keep building."
@@ -27,7 +29,7 @@ It excludes:
 - roadmap thinking
 - advanced AI features
 - browser UX
-- IDE/plugin UX
+- IDE marketplace extensions (repo-local Cursor rules / agent docs are **in scope** as documentation)
 - CI/GitHub workflow
 - anything not required to prove the core loop
 

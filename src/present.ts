@@ -32,7 +32,66 @@ function formatBuildAppears(build: BuildSignals): string[] {
   return lines;
 }
 
-export type PresentOpts = { compact?: boolean };
+export type PresentOpts = { compact?: boolean; verbose?: boolean };
+
+function humanAligned(title: string): string {
+  return [
+    "",
+    bold("On spec"),
+    "",
+    `Your markdown spec and implementation file look consistent for the checks this tool runs right now.`,
+    "",
+    dim(`Spec title: “${title}”`),
+    "",
+  ].join("\n");
+}
+
+function humanInsufficient(title: string, note?: string): string {
+  const noteBlock = note ? `${dim(note)}\n\n` : "";
+  return [
+    "",
+    bold("Not enough signal to compare"),
+    "",
+    `Intent Merge could not confidently compare “${title}” to your implementation file yet.`,
+    "",
+    noteBlock,
+    dim("Add clear ## Inputs and ## Output sections to your markdown spec, then run check again."),
+    "",
+  ].join("\n");
+}
+
+function humanMismatch(plan: PlanSignals, result: CompareResult): string {
+  const title = plan.title;
+  const n = result.mismatches.length;
+  const countLabel = n === 1 ? "1 finding" : `${n} findings`;
+  const planSays = formatPlanSays(plan);
+  const bullets = result.mismatches.map((m) => `- ${m.summary}`);
+  const confidence = result.confidenceNote ? `\n${dim("Note: " + result.confidenceNote)}\n` : "";
+
+  return [
+    "",
+    bold("Off spec"),
+    "",
+    `Your markdown spec and implementation file do not line up — ${countLabel}.`,
+    "",
+    subsection("What your spec is asking for"),
+    ...planSays.map((l) => `  - ${l}`),
+    subsection("What diverged"),
+    ...bullets.map((b) => `  ${b.startsWith("-") ? b : "- " + b}`),
+    confidence,
+    dim("Technical detail about the implementation file is available with --verbose."),
+    "",
+    dim(hr("·")),
+    "",
+    "What would you like to do next?",
+    "  [1]  Update the markdown spec to match the code",
+    "  [2]  Get a prompt you can paste into an AI to fix the code",
+    "  [3]  Decide later",
+    "",
+    dim("You can also type plain language, e.g. “update the spec”, “fix the code”, or “later”."),
+    "",
+  ].join("\n");
+}
 
 export function presentAligned(title: string, opts?: PresentOpts): string {
   if (opts?.compact) {
@@ -44,8 +103,14 @@ export function presentAligned(title: string, opts?: PresentOpts): string {
       "",
     ].join("\n");
   }
+  if (!opts?.verbose) {
+    return humanAligned(title);
+  }
   return [
     sectionTitle(`Aligned — "${title}"`),
+    "",
+    bold("On spec"),
+    dim(" (verbose)"),
     "",
     "No meaningful mismatch was found for the checks this tool can do right now.",
     "",
@@ -63,6 +128,9 @@ export function presentInsufficient(title: string, note?: string, opts?: Present
       dim("Add clearer Inputs and Output to the plan, then run check again."),
       "",
     ].join("\n");
+  }
+  if (!opts?.verbose) {
+    return humanInsufficient(title, note);
   }
   return [
     sectionTitle(`Not enough signal — "${title}"`),
@@ -84,12 +152,17 @@ export function presentMismatch(
   const buildSays = formatBuildAppears(build);
   const confidence = result.confidenceNote ? `\n${dim("Note: " + result.confidenceNote)}\n` : "";
 
+  if (!opts?.verbose && !opts?.compact) {
+    return humanMismatch(plan, result);
+  }
+
   const top = opts?.compact
     ? `\n${bold(`Mismatch — "${title}"`)}\n`
     : sectionTitle(`Mismatch — "${title}"`);
 
   return [
     top,
+    opts?.verbose ? bold("Off spec (verbose)") + "\n\n" : "",
     subsection("Your plan says"),
     ...planSays.map((l) => `  - ${l}`),
     subsection("Your build now appears to include"),
@@ -104,9 +177,11 @@ export function presentMismatch(
     dim(hr("·")),
     "",
     "What would you like to do next?",
-    "  [1]  Update plan",
-    "  [2]  Generate build-fix prompt",
+    "  [1]  Update the markdown spec to match the code",
+    "  [2]  Get a prompt you can paste into an AI to fix the code",
     "  [3]  Decide later",
+    "",
+    dim("You can also type plain language, e.g. “update the spec”, “fix the code”, or “later”."),
     "",
   ].join("\n");
 }

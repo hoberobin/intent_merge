@@ -2,12 +2,14 @@
 
 Result type: mismatch
 
-Expected mismatch summary:
-- the plan suggests returning a user account
-- the build appears to return a token only
+Expected mismatch code:
+
+- `output_token_vs_account` — plan output centers on a user account; build returns token-only shape
 
 If Update plan:
-- plan should be updated to mention token output
+
+- plan should be updated to describe token-first or session-only responses
 
 If Generate build-fix prompt:
-- prompt should ask the agent to return a user account instead of token-only output
+
+- prompt should ask the agent to return a user account (or equivalent fields), not token-only output

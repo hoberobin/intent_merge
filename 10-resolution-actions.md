@@ -3,7 +3,7 @@
 ## Goal
 Help the user take the next step immediately without leaving the flow.
 
-## Action 1: Update plan
+## Action 1: Update plan (align the markdown spec)
 Use this when the build is correct and the plan should catch up.
 
 Behavior:
@@ -12,7 +12,7 @@ Behavior:
 - add or adjust the relevant input/output/constraint lines
 - keep the file readable and useful for future AI prompts
 
-## Action 2: Generate build-fix prompt
+## Action 2: Generate build-fix prompt (align the code)
 Use this when the plan is still correct and the build should change.
 
 Behavior:

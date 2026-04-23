@@ -1,3 +1,3 @@
 # Signup
 
-This should work well for users.
+This should work well for new users during onboarding.

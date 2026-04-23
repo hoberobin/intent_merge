@@ -2,7 +2,11 @@
 
 Result type: mismatch
 
-Expected mismatch summary:
+Expected mismatch code:
+
+- `plan_input_missing_in_build` — plan lists `password`; build signature only has `email`
+
+Expected mismatch summary (plain language):
 
 - the plan expects email and password
 - the build only appears to use email

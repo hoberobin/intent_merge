@@ -1,3 +1,3 @@
-export function createUser(email: string) {
-  return { type: "user account", email };
+export function createUser(email: string, password: string) {
+  return { type: "user account", email, password };
 }

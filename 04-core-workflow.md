@@ -10,16 +10,17 @@ The workflow must feel like a plain-language merge review between what the user 
 4. Tool extracts lightweight signals from both.
 5. Tool compares those signals.
 6. Tool returns one of three states:
-   - aligned
-   - mismatch found
-   - insufficient signal
+   - aligned (**On spec** in default user-facing copy)
+   - mismatch found (**Off spec** in default user-facing copy)
+   - insufficient signal (**Not enough signal to compare** in default user-facing copy)
 7. If mismatch found, tool explains:
    - what the plan says
-   - what the build now appears to do
+   - what diverged (plain-language bullets)
+   - (optional) what the build appears to do — **full technical detail only with `--verbose`**
    - why the difference matters
 8. Tool offers resolution choices:
-   - Update plan
-   - Generate build-fix prompt
+   - Update the markdown spec (to match the code)
+   - Generate build-fix prompt (to change the code)
    - Decide later
 9. Tool either rewrites the plan, generates a copy-paste-ready AI prompt, and/or (when the user opts in and confirms) suggests an updated build file via an external model—still with **human review** before any build write—or the user defers.
 

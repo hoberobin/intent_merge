@@ -118,11 +118,15 @@ intent-merge check fixtures/06-vague-plan/plan.md fixtures/06-vague-plan/build.t
 npm run verify
 ```
 
-**CLI entry paths** (defaults, `--demo`, `init`, explicit paths; no prompts):
+This asserts each fixture’s result kind and, for mismatch fixtures, the exact mismatch `code` values from `comparePlanBuild` (so comparator changes do not silently swap one mismatch for another).
+
+**CLI entry paths** (defaults, `--demo`, `init`, `setup`, explicit paths; no prompts):
 
 ```bash
 npm run test:paths
 ```
+
+`verify` also asserts **mismatch `code` values** for each mismatch fixture (stable comparator regression).
 
 **Reset tracked fixture files to git HEAD and remove `.intent-merge/` artifacts** (requires git):
 

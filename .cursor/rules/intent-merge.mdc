@@ -1,0 +1,34 @@
+---
+description: Run Intent Merge to compare one markdown spec to one code file (same CLI as terminal).
+---
+
+# Intent Merge (spec vs one file)
+
+When the user asks to **check spec vs code**, **stay on spec**, **align plan and build**, or **run intent merge**, use the **Intent Merge CLI**—do not approximate the check in prose.
+
+## What to run
+
+1. Resolve paths to the **markdown spec** and the **single implementation file** (or use their cwd if it contains `plan.md` + `build.ts` or `feature.md` + `index.ts`).
+2. From the **intent_merge** repo after `npm run build`, or with `npx` if published:
+
+```bash
+intent-merge check --verbose path/to/spec.md path/to/file.ts
+```
+
+Use `--verbose` when the user is technical or needs signature-level detail; omit it for a shorter **On spec** / **Off spec** summary.
+
+3. If there is **no TTY**, set resolution explicitly (only if the user asked for an automated action):
+
+```bash
+intent-merge check --resolution=3 path/to/spec.md path/to/file.ts
+```
+
+## Authoritative instructions
+
+Full agent rules, flags, and safety notes: [docs/agent.md](docs/agent.md).
+
+## Limits
+
+- One markdown file + one code file per run.
+- One primary `export function` / `export async function` / `export const … = async () =>` in the code file.
+- Do not invent mismatch reasons—only relay CLI output.

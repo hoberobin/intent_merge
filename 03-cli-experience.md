@@ -17,11 +17,14 @@ Use this when the user wants direct control. If the first argument looks like a 
 ### Option B — Same-folder defaults (guided mode)
 ```bash
 intent-merge check
+intent-merge check --verbose
 ```
 
 If the user omits paths, the tool should:
 1. look for likely defaults such as `plan.md`, `feature.md`, `build.ts`, `index.ts`
-2. if both are missing, show a **short hint** first (`init` to create starters, or `check --demo` to run a built-in sample), then only if still needed prompt the user to choose files interactively
+2. if both are missing, print a **short, friendly error** that suggests `intent-merge init`, `intent-merge setup`, `intent-merge check --demo`, or passing two paths (no interactive file-picker required in MVP)
+
+**`--verbose` / `-v`:** include technical lines (function signature summary, return-shape hints) in mismatch output; default output stays human-first (**On spec** / **Off spec**).
 
 ### Option C — Built-in demo (no paths, low friction for learning)
 ```bash
@@ -39,6 +42,13 @@ intent-merge init
 
 Creates `plan.md` and `build.ts` in the working directory so the user can run **`intent-merge check`** immediately without copying repo paths. Use `init --force` only to overwrite existing files.
 
+### Option E — Quick start ritual
+```bash
+intent-merge setup
+```
+
+Checks Node version, runs **`init`** if defaults are missing, and prints the **one-minute ritual** (plus suggests `check --demo` and the larger **`examples/billing-checkout-session`** sample, which is **off spec on purpose** for practicing the mismatch loop).
+
 ## Why this matters
 A big part of this product is reducing friction.
 If running the tool feels like setup work, users will skip it.
@@ -49,10 +59,10 @@ After a mismatch is shown, the next action should happen in the same session.
 The user should not need a second command to resolve the issue.
 
 ## Resolution choices in the CLI
-Use this wording:
-- Update plan
-- Generate build-fix prompt
-- Decide later
+Lead with plain language, keep numbers as shortcuts:
+- Update the markdown spec (shortcut **1**; phrases like “update the spec”, “markdown”)
+- Get a prompt to fix the code (shortcut **2**; phrases like “fix the code”, “implementation”)
+- Decide later (shortcut **3**; phrases like “later”, “skip”)
 
 ## Low-overhead requirement
 The CLI should work well for a user who only does this:
