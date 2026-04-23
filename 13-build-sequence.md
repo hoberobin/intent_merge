@@ -1,0 +1,53 @@
+# Build Sequence
+
+## Goal
+Build the MVP in the smallest believable order.
+
+## Step 1: Create fixture files
+Build the fixture set first.
+This prevents the project from drifting into abstract design work.
+
+## Step 2: Build plan reader
+Extract:
+- title
+- inputs
+- output terms
+- explicit constraints
+- concepts
+
+## Step 3: Build build reader
+Extract:
+- function name
+- parameters
+- async flag
+- basic output cue
+- obvious concepts
+
+## Step 4: Build comparator
+Implement only the rules in `08-detection-rules.md`.
+
+## Step 5: Build presenter
+Turn comparator output into plain-language aligned / mismatch / insufficient signal responses.
+
+## Step 6: Build resolver
+Support:
+- Update plan
+- Generate build-fix prompt
+- Decide later
+
+## Step 7: Test the full loop
+For each fixture:
+- run the command
+- confirm the expected result type
+- confirm the wording feels readable
+- confirm Update plan changes the plan sensibly
+- confirm Generate build-fix prompt creates a usable prompt
+
+## Step 8: Tighten only where needed
+Only improve:
+- extraction
+- wording
+- resolution usefulness
+- CLI smoothness
+
+Do not add new scope before the fixture loop feels good.

@@ -1,0 +1,28 @@
+{
+  "name": "intent-merge",
+  "version": "0.1.0",
+  "description": "Plain-language CLI: compare a markdown plan to a build file and resolve misalignment.",
+  "type": "module",
+  "bin": {
+    "intent-merge": "./bin/intent-merge.mjs"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "verify": "node scripts/verify-fixtures.mjs",
+    "fixtures:reset": "node scripts/reset-fixtures.mjs",
+    "fixtures:retest": "npm run fixtures:reset && npm run build && npm run verify",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}

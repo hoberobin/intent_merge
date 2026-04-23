@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.tsbuildinfo
+**/.intent-merge/
+.env
+.env.local
+.env.*.local
