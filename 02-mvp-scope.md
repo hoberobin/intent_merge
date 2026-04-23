@@ -23,7 +23,7 @@ Do not include:
 - browser UI
 - IDE extension
 - GitHub or CI integration
-- autonomous code editing
+- autonomous code editing (nothing writes the build **without** explicit user confirmation after review; optional API-generated **drafts** are in scope as a convenience path)
 - multi-file reasoning
 - complex repository awareness
 - deep behavior understanding

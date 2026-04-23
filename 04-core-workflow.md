@@ -21,7 +21,7 @@ The workflow must feel like a plain-language merge review between what the user 
    - Update plan
    - Generate build-fix prompt
    - Decide later
-9. Tool either rewrites the plan or generates a copy-paste-ready AI prompt.
+9. Tool either rewrites the plan, generates a copy-paste-ready AI prompt, and/or (when the user opts in and confirms) suggests an updated build file via an external model—still with **human review** before any build write—or the user defers.
 
 ## Desired feel
 The user should feel:

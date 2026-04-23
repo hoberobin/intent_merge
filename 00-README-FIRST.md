@@ -10,6 +10,11 @@ This spec set defines a narrow MVP for a plan-vs-build alignment tool for people
 - expanded the fixture set into real proof-of-concept test cases
 - added expected outcomes so the test loop is easy to verify
 
+## Keep this spec aligned with the implementation (living product)
+When the CLI or README changes, update the numbered specs—especially **03** (CLI), **12** (proof loop), **13** (build sequence), **10** (resolution)—so they stay the single source of truth for behavior and testing.
+
+**As implemented (still MVP):** optional **OpenAI**-assisted *draft* of the build file after “Generate build-fix prompt,” only if the user opts in, reviews (including in an editor), and confirms before writing. That is not “autonomous editing” or “advanced AI product features”; the default path remains prompt text + user/agent.
+
 ## MVP in one sentence
 Intent Merge is a plain-language CLI tool that compares a lightweight markdown plan file to a simple code file, shows where they no longer align, and helps the user either update the plan or generate a prompt for the AI to update the build.
 

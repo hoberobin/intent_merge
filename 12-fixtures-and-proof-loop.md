@@ -90,7 +90,18 @@ Purpose:
 - confirm the tool avoids guessing when the plan is too loose
 
 ## Proof loop commands
-These are the commands the builder should be able to run immediately:
+These are the commands the builder should be able to run immediately.
+
+**Fast path (from repo, no paths):** packaged demos use the same files as the fixtures:
+
+```bash
+npm run build
+npm run demo
+# same as: intent-merge check --demo   (default: 03-missing-password)
+intent-merge check --demo 02
+```
+
+**Explicit paths** (always valid for CI or when not using `--demo`):
 
 ```bash
 intent-merge check fixtures/01-aligned/plan.md fixtures/01-aligned/build.ts
@@ -99,6 +110,19 @@ intent-merge check fixtures/03-missing-password/plan.md fixtures/03-missing-pass
 intent-merge check fixtures/04-token-output/plan.md fixtures/04-token-output/build.ts
 intent-merge check fixtures/05-async-warning/plan.md fixtures/05-async-warning/build.ts
 intent-merge check fixtures/06-vague-plan/plan.md fixtures/06-vague-plan/build.ts
+```
+
+**Comparator-only regression** (no interactive resolution):
+
+```bash
+npm run verify
+```
+
+**Reset tracked fixture files to git HEAD and remove `.intent-merge/` artifacts** (requires git):
+
+```bash
+npm run fixtures:reset
+npm run fixtures:retest
 ```
 
 ## Proof standard

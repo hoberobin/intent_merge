@@ -9,10 +9,13 @@ dotenv.config({ path: join(packageRoot, ".env") });
 
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { demoPaths, listDemoIds } from "./demo-fixtures.js";
+import { runInit } from "./init-starter.js";
 import { readPlan } from "./plan-reader.js";
 import { comparePlanBuild, planBuildForDisplay } from "./compare.js";
 import { presentAligned, presentInsufficient, presentMismatch } from "./present.js";
 import { applyResolution, promptResolution } from "./resolve.js";
+import { dim } from "./terminal-ui.js";
 
 const DEFAULT_PLANS = ["plan.md", "feature.md"];
 const DEFAULT_BUILDS = ["build.ts", "index.ts"];
@@ -26,7 +29,7 @@ async function fileExists(p: string): Promise<boolean> {
   }
 }
 
-async function pickDefault(candidates: string[], label: string, cwd: string): Promise<string | null> {
+async function pickDefault(candidates: string[], cwd: string): Promise<string | null> {
   for (const name of candidates) {
     const full = path.join(cwd, name);
     if (await fileExists(full)) return full;
@@ -35,18 +38,46 @@ async function pickDefault(candidates: string[], label: string, cwd: string): Pr
 }
 
 async function askPath(rl: readline.Interface, label: string): Promise<string> {
-  const raw = (await rl.question(`Enter path to ${label}: `)).trim();
+  const raw = (await rl.question(`Path to ${label}: `)).trim();
   return path.resolve(raw);
 }
 
-function parseCheckRest(rest: string[]): {
+function normalizeArgv(argv: string[]): string[] {
+  if (argv.length === 0) return ["help"];
+  const c = argv[0];
+  if (c === "check" || c === "init" || c === "help" || c === "-h" || c === "--help") return argv;
+  if (c === "demo") return ["check", "--demo", ...argv.slice(1)];
+  if (c.endsWith(".md") || c.endsWith(".ts") || c.endsWith(".tsx") || c.endsWith(".js")) {
+    return ["check", ...argv];
+  }
+  return argv;
+}
+
+function parseAfterCheck(rest: string[]): {
   paths: string[];
   resolutionToken?: string;
+  demo?: string;
 } {
   const paths: string[] = [];
   let resolutionToken: string | undefined;
+  let demo: string | undefined;
+
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
+    if (a === "--demo") {
+      const next = rest[i + 1];
+      if (next && !next.startsWith("-")) {
+        demo = next;
+        i++;
+      } else {
+        demo = "03";
+      }
+      continue;
+    }
+    if (a.startsWith("--demo=")) {
+      demo = a.slice("--demo=".length) || "03";
+      continue;
+    }
     if (a === "--resolution" && rest[i + 1]) {
       resolutionToken = rest[i + 1];
       i++;
@@ -66,7 +97,7 @@ function parseCheckRest(rest: string[]): {
   if (paths.length >= 3 && /^[123]$/.test(paths[paths.length - 1])) {
     resolutionToken = paths.pop();
   }
-  return { paths, resolutionToken };
+  return { paths, resolutionToken, demo };
 }
 
 async function resolvePaths(pathArgs: string[], cwd: string): Promise<[string, string]> {
@@ -74,37 +105,72 @@ async function resolvePaths(pathArgs: string[], cwd: string): Promise<[string, s
     return [path.resolve(pathArgs[0]), path.resolve(pathArgs[1])];
   }
   if (pathArgs.length === 1) {
-    throw new Error("Provide both plan and build paths, or run with no paths for guided mode.");
+    throw new Error("Pass two paths (plan then build), or use defaults / --demo.");
   }
-  const plan = await pickDefault(DEFAULT_PLANS, "plan", cwd);
-  const build = await pickDefault(DEFAULT_BUILDS, "build", cwd);
-  if (plan && build) return [plan, build];
-  const rl = readline.createInterface({ input, output });
-  try {
-    const p = plan ?? (await askPath(rl, "plan markdown file"));
-    const b = build ?? (await askPath(rl, "build TypeScript file"));
-    return [p, b];
-  } finally {
-    rl.close();
+  const plan = await pickDefault(DEFAULT_PLANS, cwd);
+  const build = await pickDefault(DEFAULT_BUILDS, cwd);
+  if (!plan || !build) {
+    throw new Error(
+      `No plan.md + build.ts in this folder (${cwd}).\n\n` +
+        `  intent-merge init          create starters here\n` +
+        `  intent-merge check --demo  run a built-in sample (no paths)\n`,
+    );
   }
+  return [plan, build];
+}
+
+function printHelp(): void {
+  const ids = listDemoIds().join(", ");
+  console.log(`Intent Merge — compare one plan file to one build file
+
+${dim("Quick")}
+  intent-merge check              use ./plan.md + ./build.ts when both exist
+  intent-merge check --demo       built-in sample (${dim("default: 03 missing-password")})
+  intent-merge demo               same as check --demo
+  intent-merge init               create plan.md + build.ts in this folder
+
+${dim("Your files")}
+  intent-merge check plan.md build.ts
+  intent-merge check --demo 02       sample by id: ${ids} (or folder name)
+
+${dim("Automation")}
+  intent-merge check --resolution=2 plan.md build.ts
+  INTENT_MERGE_RESOLUTION=3 intent-merge check
+
+${dim("More")}
+  intent-merge help               show this message
+`);
 }
 
 async function main(): Promise<void> {
-  const argv = process.argv.slice(2);
-  if (argv[0] !== "check") {
-    console.log(`Usage: intent-merge check [plan.md] [build.ts] [--resolution=1|2|3 | 1|2|3]
+  const argv = normalizeArgv(process.argv.slice(2));
+  const cmd = argv[0];
 
-Run with no file paths to try plan.md / feature.md and build.ts / index.ts in the current directory.
+  if (cmd === "help" || cmd === "-h" || cmd === "--help") {
+    printHelp();
+    return;
+  }
 
-When there is a mismatch, type 1, 2, or 3 at the prompt (in an interactive terminal), or pass --resolution=2 / a trailing 2, or set INTENT_MERGE_RESOLUTION.
+  if (cmd === "init") {
+    const force = argv.includes("--force");
+    try {
+      await runInit(process.cwd(), { force });
+    } catch (e) {
+      console.error((e as Error).message);
+      process.exitCode = 1;
+    }
+    return;
+  }
 
-After option 2: with OPENAI_API_KEY, you get an AI draft, open it in your editor, revise, then apply; otherwise use the saved prompt / hook / manual edit, then re-check. Optional: INTENT_MERGE_HOOK runs your command with INTENT_MERGE_PROMPT_FILE set.`);
+  if (cmd !== "check") {
+    console.error(`Unknown command: ${cmd}\n`);
+    printHelp();
     process.exitCode = 1;
     return;
   }
 
   const rawRest = argv.slice(1);
-  const { paths: pathArgs, resolutionToken } = parseCheckRest(rawRest);
+  const { paths: pathArgs, resolutionToken, demo } = parseAfterCheck(rawRest);
   if (resolutionToken) {
     process.env.INTENT_MERGE_RESOLUTION = resolutionToken;
   }
@@ -112,8 +178,22 @@ After option 2: with OPENAI_API_KEY, you get an AI draft, open it in your editor
   const cwd = process.cwd();
   let planPath: string;
   let buildPath: string;
+
   try {
-    [planPath, buildPath] = await resolvePaths(pathArgs, cwd);
+    if (demo !== undefined) {
+      if (pathArgs.length > 0) {
+        throw new Error("Use either --demo or two file paths, not both.");
+      }
+      const d = demoPaths(packageRoot, demo);
+      planPath = d.planPath;
+      buildPath = d.buildPath;
+      if (!(await fileExists(planPath)) || !(await fileExists(buildPath))) {
+        throw new Error(`Demo files missing for "${d.folder}" (expected under package fixtures/).`);
+      }
+      console.log(dim(`Demo: fixtures/${d.folder}/ (plan + build)\n`));
+    } else {
+      [planPath, buildPath] = await resolvePaths(pathArgs, cwd);
+    }
   } catch (e) {
     console.error((e as Error).message);
     process.exitCode = 1;
@@ -151,18 +231,9 @@ After option 2: with OPENAI_API_KEY, you get an AI draft, open it in your editor
   const outcome = await promptResolution();
   if (outcome.kind === "noninteractive") {
     console.log(`
-No resolution ran because this session is not interactive (stdin is not a terminal).
+No resolution ran (not a TTY). Re-run with a flag, for example:
 
-Run the same check again with one of:
-
-  INTENT_MERGE_RESOLUTION=1  (Update plan — writes the plan file; no interactive preview)
-  INTENT_MERGE_RESOLUTION=2  (Generate build-fix prompt — saves prompt file + prints; no re-check)
-  INTENT_MERGE_RESOLUTION=3  (Decide later — no file changes)
-
-In a normal terminal, you can type 1, 2, or 3 when prompted. You can also pass the choice on the command line:
-
-  node bin/intent-merge.mjs check plan.md build.ts --resolution=2
-  node bin/intent-merge.mjs check plan.md build.ts 2
+  intent-merge check --resolution=2 ${path.relative(cwd, planPath) || planPath} ${path.relative(cwd, buildPath) || buildPath}
 `);
     return;
   }

@@ -12,16 +12,32 @@ The user should not need to memorize many commands or manage a bunch of setup.
 intent-merge check plan.md build.ts
 ```
 
-Use this when the user wants direct control.
+Use this when the user wants direct control. If the first argument looks like a file (e.g. ends in `.md` / `.ts`), the word **`check`** may be omitted: `intent-merge plan.md build.ts`.
 
-### Option B — Guided mode
+### Option B — Same-folder defaults (guided mode)
 ```bash
 intent-merge check
 ```
 
 If the user omits paths, the tool should:
 1. look for likely defaults such as `plan.md`, `feature.md`, `build.ts`, `index.ts`
-2. if not found, prompt the user to choose files interactively
+2. if both are missing, show a **short hint** first (`init` to create starters, or `check --demo` to run a built-in sample), then only if still needed prompt the user to choose files interactively
+
+### Option C — Built-in demo (no paths, low friction for learning)
+```bash
+intent-merge check --demo
+intent-merge check --demo 03
+intent-merge demo
+```
+
+Runs a packaged fixture from the tool install (default sample: missing-password). Accepts short ids (`01`–`06`), aliases (e.g. `roles`, `token`), or full folder names under `fixtures/`.
+
+### Option D — Starter files in the current directory
+```bash
+intent-merge init
+```
+
+Creates `plan.md` and `build.ts` in the working directory so the user can run **`intent-merge check`** immediately without copying repo paths. Use `init --force` only to overwrite existing files.
 
 ## Why this matters
 A big part of this product is reducing friction.

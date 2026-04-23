@@ -10,6 +10,7 @@
     "build": "tsc",
     "dev": "tsx src/cli.ts",
     "verify": "node scripts/verify-fixtures.mjs",
+    "demo": "node bin/intent-merge.mjs check --demo",
     "fixtures:reset": "node scripts/reset-fixtures.mjs",
     "fixtures:retest": "npm run fixtures:reset && npm run build && npm run verify",
     "prepublishOnly": "npm run build"

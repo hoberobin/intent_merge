@@ -16,12 +16,14 @@ Behavior:
 Use this when the plan is still correct and the build should change.
 
 Behavior:
-- do not edit code automatically
+- do not edit code **automatically** or silently
+- persist the prompt to disk (e.g. under a `.intent-merge/` folder next to the plan) and print it; copy to clipboard when the platform allows
 - generate a plain-language prompt the user can paste into their coding agent
 - the prompt must clearly state:
   - what the plan intends
   - what the build currently appears to do
   - what needs to change
+- **Optional (implementation):** if an API key is configured, offer a **draft** new build file the user can open in an editor, revise, and **apply only after confirmation**—otherwise the user uses the prompt with their agent and re-runs the check
 
 ## Action 3: Decide later
 Use this when the user wants to keep moving without resolving the mismatch now.

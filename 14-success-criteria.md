@@ -6,7 +6,7 @@ Define what it means for the MVP to prove the concept.
 ## Success criteria
 
 ### 1. Easy to trigger
-A user can run the tool with one command and without significant setup overhead.
+A user can run the tool with one command and without significant setup overhead (including **same-folder** `plan.md` + `build.ts`, **`check --demo`**, or **`init`** then `check`).
 
 ### 2. Understandable output
 A non-technical or semi-technical builder can read the result and understand the mismatch without needing code-level language.
