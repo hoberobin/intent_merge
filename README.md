@@ -211,6 +211,7 @@ These directories are gitignored (`**/.intent-merge/`). `fixtures:reset` deletes
 ## Security
 
 - **Do not commit API keys.** Use `.env` locally only; rotate any key that was ever pasted into chat or a ticket.
+- **Never put real secrets in `.env.example`** — only placeholders. GitHub push protection will block the push if a key appears in tracked files.
 - The tool **does not** send your plan or build to OpenAI unless you choose option **2** and confirm the AI draft step.
 
 If something in this README drifts from the code, search the repo for `INTENT_MERGE_`, `fixtures:reset`, and `parseCheckRest` in [`src/cli.ts`](src/cli.ts) / [`src/resolve.ts`](src/resolve.ts) for the source of truth.
