@@ -118,6 +118,12 @@ intent-merge check fixtures/06-vague-plan/plan.md fixtures/06-vague-plan/build.t
 npm run verify
 ```
 
+**CLI entry paths** (defaults, `--demo`, `init`, explicit paths; no prompts):
+
+```bash
+npm run test:paths
+```
+
 **Reset tracked fixture files to git HEAD and remove `.intent-merge/` artifacts** (requires git):
 
 ```bash

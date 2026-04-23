@@ -57,4 +57,4 @@ Whenever behavior changes (new flags, scripts, optional OpenAI path, `init` / `-
 - **03-cli-experience.md**, **04-core-workflow.md**, **10-resolution-actions.md**, **12-fixtures-and-proof-loop.md**, and **00-README-FIRST.md** if scope wording shifts
 - **README.md** in the repo for day-to-day contributors
 
-Run **`npm run verify`** and **`npm run fixtures:retest`** after substantive changes.
+Run **`npm run verify`**, **`npm run test:paths`**, and **`npm run fixtures:retest`** after substantive changes.
