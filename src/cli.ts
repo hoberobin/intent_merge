@@ -50,7 +50,7 @@ function presentFolderResults(pairs: FolderPairResult[]): string {
   const lines: string[] = [""];
   for (const p of pairs) {
     const label = kindLabel(p.kind);
-    const status = p.kind === "aligned" ? bold(label) : bold(label);
+    const status = bold(label);
     lines.push(`  ${bold(p.folder)}  —  ${status}  ${dim(`"${p.title}"`)}`);
     if (p.kind === "mismatch" && p.mismatches.length > 0) {
       for (const m of p.mismatches) {
