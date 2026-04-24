@@ -16,6 +16,8 @@ import { comparePlanBuild, planBuildForDisplay } from "./compare.js";
 import { presentAligned, presentInsufficient, presentMismatch } from "./present.js";
 import { applyResolution, promptResolution } from "./resolve.js";
 import { bold, dim } from "./terminal-ui.js";
+import { folderCheckHasFailure, runFolderCheck } from "./folder-check.js";
+import type { FolderPairResult } from "./folder-check.js";
 
 const DEFAULT_PLANS = ["plan.md", "feature.md"];
 const DEFAULT_BUILDS = ["build.ts", "index.ts"];
@@ -27,6 +29,42 @@ async function fileExists(p: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function isDirectory(p: string): Promise<boolean> {
+  try {
+    const stat = await fs.stat(p);
+    return stat.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function kindLabel(kind: FolderPairResult["kind"]): string {
+  if (kind === "aligned") return "on spec";
+  if (kind === "mismatch") return "off spec";
+  return "not enough signal";
+}
+
+function presentFolderResults(pairs: FolderPairResult[]): string {
+  const lines: string[] = [""];
+  for (const p of pairs) {
+    const label = kindLabel(p.kind);
+    const status = p.kind === "aligned" ? bold(label) : bold(label);
+    lines.push(`  ${bold(p.folder)}  —  ${status}  ${dim(`"${p.title}"`)}`);
+    if (p.kind === "mismatch" && p.mismatches.length > 0) {
+      for (const m of p.mismatches) {
+        lines.push(`    ${dim("·")} ${m.summary}`);
+      }
+    }
+    if (p.kind === "insufficient_signal") {
+      lines.push(
+        `    ${dim("·")} Add clear ## Inputs and ## Output sections to the plan to enable comparison.`,
+      );
+    }
+  }
+  lines.push("");
+  return lines.join("\n");
 }
 
 async function pickDefault(candidates: string[], cwd: string): Promise<string | null> {
@@ -60,16 +98,22 @@ function parseAfterCheck(rest: string[]): {
   resolutionToken?: string;
   demo?: string;
   verbose: boolean;
+  json: boolean;
 } {
   const paths: string[] = [];
   let resolutionToken: string | undefined;
   let demo: string | undefined;
   let verbose = false;
+  let json = false;
 
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
     if (a === "--verbose" || a === "-v") {
       verbose = true;
+      continue;
+    }
+    if (a === "--json") {
+      json = true;
       continue;
     }
     if (a === "--demo") {
@@ -105,7 +149,7 @@ function parseAfterCheck(rest: string[]): {
   if (paths.length >= 3 && /^[123]$/.test(paths[paths.length - 1])) {
     resolutionToken = paths.pop();
   }
-  return { paths, resolutionToken, demo, verbose };
+  return { paths, resolutionToken, demo, verbose, json };
 }
 
 async function resolvePaths(pathArgs: string[], cwd: string): Promise<[string, string]> {
@@ -225,13 +269,142 @@ async function main(): Promise<void> {
   }
 
   const rawRest = argv.slice(1);
-  const { paths: pathArgs, resolutionToken, demo, verbose } = parseAfterCheck(rawRest);
+  const { paths: pathArgs, resolutionToken, demo, verbose, json } = parseAfterCheck(rawRest);
   if (resolutionToken) {
     process.env.INTENT_MERGE_RESOLUTION = resolutionToken;
   }
 
   const cwd = process.cwd();
   const presentOpts = { verbose };
+
+  // ── Folder-first mode ──────────────────────────────────────────────────────
+  // Trigger when: exactly one path arg that resolves to a directory, and no
+  // --demo flag. This covers both "check <folder>" and "check ." use cases.
+  if (demo === undefined && pathArgs.length === 1) {
+    const candidate = path.resolve(pathArgs[0]);
+    if (await isDirectory(candidate)) {
+      const folderResult = await runFolderCheck(candidate);
+
+      if (folderResult.pairs.length === 0) {
+        // No pairs found anywhere — print the same friendly error as single-pair mode
+        console.error(
+          `No markdown spec + implementation pair found in this folder yet.\n\n` +
+            `Intent Merge looks for one of: ${DEFAULT_PLANS.join(", ")} with one of: ${DEFAULT_BUILDS.join(", ")}.\n\n` +
+            `Try one of these:\n` +
+            `  intent-merge init              create plan.md + build.ts here\n` +
+            `  intent-merge check --demo      run a built-in sample (nothing to create)\n` +
+            `  intent-merge setup             quick start: create files if missing + print the ritual\n\n` +
+            `Or pass two paths: intent-merge check path/to/spec.md path/to/file.ts\n`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+
+      if (json) {
+        // JSON output: array of result objects
+        const output = folderResult.pairs.map((p) => ({
+          folder: p.folder,
+          kind: p.kind,
+          title: p.title,
+          mismatches: p.mismatches,
+        }));
+        process.stdout.write(JSON.stringify(output, null, 2) + "\n");
+        if (folderCheckHasFailure(folderResult)) {
+          process.exitCode = 1;
+        }
+        return;
+      }
+
+      if (folderResult.mode === "single") {
+        // Root-pair found: delegate to normal single-pair display below
+        // Override pathArgs so resolvePaths picks up the correct folder
+        pathArgs.length = 0;
+        pathArgs.push(candidate);
+        // Remove the directory from pathArgs and instead set cwd — resolved below
+        // Actually: override cwd logic by setting planPath/buildPath here
+        const rootPair = folderResult.pairs[0];
+        if (rootPair._planPath && rootPair._buildPath) {
+          // Set up planPath/buildPath directly and jump to single-pair display
+          const planMdSingle = await fs.readFile(rootPair._planPath, "utf8");
+          const buildSourceSingle = await fs.readFile(rootPair._buildPath, "utf8");
+          const resultSingle = comparePlanBuild(planMdSingle, buildSourceSingle);
+          if (resultSingle.kind === "aligned") {
+            const plan = readPlan(planMdSingle);
+            console.log(presentAligned(plan.title, presentOpts));
+            return;
+          }
+          if (resultSingle.kind === "insufficient_signal") {
+            const plan = readPlan(planMdSingle);
+            console.log(presentInsufficient(plan.title, resultSingle.confidenceNote, presentOpts));
+            process.exitCode = 1;
+            return;
+          }
+          const { plan, build } = planBuildForDisplay(planMdSingle, buildSourceSingle);
+          console.log(presentMismatch(plan, build, resultSingle, presentOpts));
+          const outcome = await promptResolution();
+          if (outcome.kind === "noninteractive") {
+            console.log(`
+No resolution ran (not a TTY). Re-run with a flag, for example:
+
+  intent-merge check --resolution=2 ${path.relative(cwd, rootPair._planPath) || rootPair._planPath} ${path.relative(cwd, rootPair._buildPath) || rootPair._buildPath}
+`);
+            process.exitCode = 1;
+            return;
+          }
+          await applyResolution(
+            outcome.choice,
+            rootPair._planPath,
+            rootPair._buildPath,
+            planMdSingle,
+            buildSourceSingle,
+            plan,
+            build,
+            resultSingle,
+            { interactive: input.isTTY, verbose },
+          );
+          return;
+        }
+      } else {
+        // Multi-folder display
+        console.log(presentFolderResults(folderResult.pairs));
+        if (folderCheckHasFailure(folderResult)) {
+          process.exitCode = 1;
+        }
+        return;
+      }
+    }
+  }
+
+  // ── Zero-arg folder-first mode: run check on cwd ─────────────────────────
+  // When no paths given and no --demo, check if current directory has subfolders
+  // with pairs. If it does, run folder mode. Otherwise fall through to default
+  // single-pair behavior (for backward compatibility).
+  if (demo === undefined && pathArgs.length === 0) {
+    const folderResult = await runFolderCheck(cwd);
+    // Only use folder mode if we found multiple pairs (multi mode)
+    // Single-root mode falls through to existing behavior below
+    if (folderResult.mode === "multi" && folderResult.pairs.length > 0) {
+      if (json) {
+        const output = folderResult.pairs.map((p) => ({
+          folder: p.folder,
+          kind: p.kind,
+          title: p.title,
+          mismatches: p.mismatches,
+        }));
+        process.stdout.write(JSON.stringify(output, null, 2) + "\n");
+        if (folderCheckHasFailure(folderResult)) {
+          process.exitCode = 1;
+        }
+        return;
+      }
+      console.log(presentFolderResults(folderResult.pairs));
+      if (folderCheckHasFailure(folderResult)) {
+        process.exitCode = 1;
+      }
+      return;
+    }
+  }
+
   let planPath: string;
   let buildPath: string;
 
