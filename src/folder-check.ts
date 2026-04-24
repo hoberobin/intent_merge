@@ -12,6 +12,9 @@ import { readPlan } from "./plan-reader.js";
 import type { CompareResult } from "./types.js";
 
 const DEFAULT_PLANS = ["plan.md", "feature.md"];
+// Note: folder-check.ts accepts .js builds (for compiled/JS-first projects) while cli.ts's
+// single-pair fallback only checks ["build.ts", "index.ts"]. If these lists are ever unified,
+// update the error message in cli.ts's resolvePaths() to match.
 const DEFAULT_BUILDS = ["build.ts", "index.ts", "build.js", "index.js"];
 
 export interface FolderPairResult {
